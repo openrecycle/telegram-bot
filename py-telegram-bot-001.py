@@ -4,13 +4,13 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram import base
 import os
 import logging
-#import config
+import config
 import codecs
 import csv
 
 
-telegram_token = "342496596:AAGdzdiuSuNB7kcx4uDsqtNsEkghg0PXa58"
-#telegram_token = config.telegram_token
+#telegram_token = "342496596:AAGdzdiuSuNB7kcx4uDsqtNsEkghg0PXa58"
+telegram_token = config.TOKEN
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level= logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -152,6 +152,19 @@ def find_address(district=None):
                      result += row[1]
     return result
 
+def find_address_by_metro(metro_name=None):
+    result = ""
+    if metro_name!=None:
+        #with open('D:\\Projects\\Py-Telegram-Bot\\districts.csv') as csvfile:
+        with codecs.open('D:\\Projects\\Py-Telegram-Bot\\districts.csv', encoding='utf-8') as csvfile:
+             reader = csv.reader(csvfile, delimiter=',', quotechar='"')
+             for row in reader:
+                 if result != "":
+                     result += "\n"
+                 if metro_name.lower() == row[1].lower().encode('utf-8') or metro_name.lower() == row[1].lower()[:len(metro_name)] or metro_name.lower() in row[1].lower():
+                     result += row[1]
+    return result
+
 def start(bot, update):
     bot.sendMessage(chat_id=update.message.chat.id, text='Привет! Я помогу Вам правильно рассортировать Ваши отходы.'\
                     'Доступные команды:'\
@@ -214,58 +227,30 @@ def metro_cmd(bot, update, **args):
 def button(bot, update):
     query = update.callback_query
     city_place_code = query.data
+    metro_place_code = query.data
     keyboard_back = [[InlineKeyboardButton(" «< ", callback_data='back')]]
     reply_markup = InlineKeyboardMarkup(keyboard_back)
+    city_place = ""
+    metro_name = ""
     if city_place_code == 'back':
         text = 'Пожалуйста, выберите, район города:'
         reply_markup = InlineKeyboardMarkup(keyboard)
         bot.sendMessage(chat_id=query.message.chat.id, text=text, reply_markup=reply_markup,message_id=query.message.message_id)
-    elif city_place_code == 'spb_adm':
-        city_place = spb_adm
-    elif city_place_code == 'spb_vas':
-        city_place = spb_vas
-    elif city_place_code == 'spb_vyb':
-        city_place = spb_vyb
-    elif city_place_code == 'spb_kln':
-        city_place = spb_kln
-    elif city_place_code == 'spb_kir':
-        city_place = spb_kir
-    elif city_place_code == 'spb_krg':
-        city_place = spb_krg
-    elif city_place_code == 'spb_krs':
-        city_place = spb_krs
-    elif city_place_code == 'spb_krd':
-        city_place = spb_krd
-    elif city_place_code == 'spb_msk':
-        city_place = spb_msk
-    elif city_place_code == 'spb_nev':
-        city_place = spb_nev
-    elif city_place_code == 'spb_prd':
-        city_place = spb_prd
-    elif city_place_code == 'spb_pdv':
-        city_place = spb_pdv
-    elif city_place_code == 'spb_prm':
-        city_place = spb_prm
-    elif city_place_code == 'spb_frz':
-        city_place = spb_frz
-    elif city_place_code == 'spb_cnt':
-        city_place = spb_cnt
-    address= find_address(city_place)
-    if address == "":
-        address = "В данном районе нет пункта сбора. Просьба выборать ближайший район города к вашему"
-        bot.sendMessage(chat_id=query.message.chat.id, text=address, reply_markup=reply_markup,message_id=query.message.message_id)
-    else:
-        bot.sendMessage(chat_id=query.message.chat.id, text=address)
-
-def metro_button(bot, update):
-    query = update.callback_query
-    metro_place_code = query.data
-    keyboard_back = [[InlineKeyboardButton(" «< ", callback_data='back')]]
-    reply_markup = InlineKeyboardMarkup(keyboard_back)
-    if city_place_code == 'back':
-        text = 'Пожалуйста, выберите, станцию метро города:'
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        bot.sendMessage(chat_id=query.message.chat.id, text=text, reply_markup=reply_markup,message_id=query.message.message_id)
+    elif city_place_code == 'spb_adm': city_place = spb_adm
+    elif city_place_code == 'spb_vas': city_place = spb_vas
+    elif city_place_code == 'spb_vyb': city_place = spb_vyb
+    elif city_place_code == 'spb_kln': city_place = spb_kln
+    elif city_place_code == 'spb_kir': city_place = spb_kir
+    elif city_place_code == 'spb_krg': city_place = spb_krg
+    elif city_place_code == 'spb_krs': city_place = spb_krs
+    elif city_place_code == 'spb_krd': city_place = spb_krd
+    elif city_place_code == 'spb_msk': city_place = spb_msk
+    elif city_place_code == 'spb_nev': city_place = spb_nev
+    elif city_place_code == 'spb_prd': city_place = spb_prd
+    elif city_place_code == 'spb_pdv': city_place = spb_pdv
+    elif city_place_code == 'spb_prm': city_place = spb_prm
+    elif city_place_code == 'spb_frz': city_place = spb_frz
+    elif city_place_code == 'spb_cnt': city_place = spb_cnt
     elif metro_place_code == 'spb_01': metro_name = 'ст.м. Автово'
     elif metro_place_code == 'spb_02': metro_name = 'ст.м. Адмиралтейская'               
     elif metro_place_code == 'spb_03': metro_name = 'ст.м. Академическая'                
@@ -332,13 +317,16 @@ def metro_button(bot, update):
     elif metro_place_code == 'spb_64': metro_name = 'ст.м. Чёрная речка'                 
     elif metro_place_code == 'spb_65': metro_name = 'ст.м. Чернышевская'                 
     elif metro_place_code == 'spb_66': metro_name = 'ст.м. Чкаловская'                   
-    elif metro_place_code == 'spb_67': metro_name = 'ст.м. Электросила'                  
-    address= find_address(metro_name.replace('ст.м.',''))
+    elif metro_place_code == 'spb_67': metro_name = 'ст.м. Электросила'
+    print (city_place)
+    print (metro_name)
+    if city_place != "":
+        address= find_address(city_place)
+    elif metro_name != "":
+        address= find_address_by_metro(metro_name.replace('ст.м. ','')) 
     if address == "":
-        address = "В данном районе нет пункта сбора. Просьба выборать ближайший район города к вашему"
-        bot.sendMessage(chat_id=query.message.chat.id, text=address, reply_markup=reply_markup,message_id=query.message.message_id)
-    else:
-        bot.sendMessage(chat_id=update.message.chat.id, text=address)
+        address = "В данном районе|станции метро нет пункта сбора. Просьба выборать ближайший район/станцию метро города к вашему"
+    bot.sendMessage(chat_id=query.message.chat.id, text=address)
 
 start_handler = CommandHandler('start', start)
 recycle_handler = CommandHandler('recycle', recycle_cmd, pass_args=True)
@@ -354,7 +342,6 @@ dispatcher.add_handler(types_handler)
 dispatcher.add_handler(help_handler)
 dispatcher.add_handler(metro_handler)
 dispatcher.add_handler(CallbackQueryHandler(button))
-dispatcher.add_handler(CallbackQueryHandler(metro_button))
 
 if __name__ == '__main__':
     updater.start_polling()
