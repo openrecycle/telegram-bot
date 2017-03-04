@@ -15,21 +15,21 @@ logger = logging.getLogger(__name__)
 updater = Updater(telegram_token)
 dispatcher = updater.dispatcher
 
-spb_adm='адмиралтейский'
-spb_vas='василеостровский'
-spb_vyb='выборгский'
-spb_kln='калининский'
-spb_kir='кировский'
-spb_krg='красногвардейский'
-spb_krs='красносельский'
-spb_krd='кронштадский'
-spb_msk='московский'
-spb_nev='невский'
-spb_prd='петроградский'
-spb_pdv='петродворцовый'
-spb_prm='приморский'
-spb_frz='фрунзенский'
-spb_cnt='центральны'
+spb_adm=u'адмиралтейский'
+spb_vas=u'василеостровский'
+spb_vyb=u'выборгский'
+spb_kln=u'калининский'
+spb_kir=u'кировский'
+spb_krg=u'красногвардейский'
+spb_krs=u'красносельский'
+spb_krd=u'кронштадский'
+spb_msk=u'московский'
+spb_nev=u'невский'
+spb_prd=u'петроградский'
+spb_pdv=u'петродворцовый'
+spb_prm=u'приморский'
+spb_frz=u'фрунзенский'
+spb_cnt=u'центральный'
 
 keyboard = [[InlineKeyboardButton(spb_adm, callback_data='spb_adm')], #адмиралтейский
             [InlineKeyboardButton(spb_vas, callback_data='spb_vas')], # василеостровский
@@ -139,6 +139,8 @@ def button(bot, update):
         city_place = spb_frz
     elif city_place_code == 'spb_cnt':
         city_place = spb_cnt
+    address= find_address(city_place)
+    bot.sendMessage(chat_id=update.message.chat.id, text=address)
 
 start_handler = CommandHandler('start', start)
 recycle_handler = CommandHandler('recycle', recycle_cmd, pass_args=True)
