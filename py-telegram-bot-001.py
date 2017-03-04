@@ -31,7 +31,7 @@ spb_prm=u'приморский'
 spb_frz=u'фрунзенский'
 spb_cnt=u'центральный'
 
-keyboard = [[InlineKeyboardButton(spb_adm, callback_data='spb_adm')], #адмиралтейский
+keyboard = [[InlineKeyboardButton(spb_adm, callback_data='spb_adm')], # адмиралтейский
             [InlineKeyboardButton(spb_vas, callback_data='spb_vas')], # василеостровский
             [InlineKeyboardButton(spb_vyb, callback_data='spb_vyb')], # выборгский
             [InlineKeyboardButton(spb_kln, callback_data='spb_kln')], # калининский
@@ -49,22 +49,32 @@ keyboard = [[InlineKeyboardButton(spb_adm, callback_data='spb_adm')], #адми�
             ]
 
 def find_address(district=None):
+    result = ""
     if district!=None:
         with open('D:\\Projects\\Py-Telegram-Bot\\districts.csv') as csvfile:
              reader = csv.reader(csvfile, delimiter=',', quotechar='"')
              for row in reader:
-                 if district == row[0]:
-                     return row[1]
-    else:
-        return ""
+                 if result != "":
+                     result += "\n"
+                 if district.lower() == row[0].lower():
+                     result += row[1]
+    return result
 
 def start(bot, update):
-    bot.sendMessage(chat_id=update.message.chat.id, text='Hello! This is Telegram Bot! I help you recycle your garbage.')
+    bot.sendMessage(chat_id=update.message.chat.id, text='Привет! Я помогу Вам правильно рассортировать Ваши отходы.'\
+                    'Доступные команды:'\
+                    '/start - начало работы со мой'\
+                    '/helpme - помощь по командам и как мной пользоваться'\
+                    '/recycle или /recycle <наименование> - введите ключевое слово, к примеру "пластиковая бутылка" и я помогу определить можно ее утилизировать или нет'\
+                    '/where или /where <район города> - подскажу, где пункт сбора в вашем районе'\
+                    '/types - подскажу какие отходы бывают'\
+                    '/metro или /metro <станция метро> - подскажу, где пункт сбора отностельно метро')
 
 """
 /recycle
 /where
 /types
+/metro
 """
 
 def recycle_cmd(bot, update, **args):
@@ -94,11 +104,19 @@ def where_cmd(bot, update, **args):
     else:
         bot.sendMessage(chat_id=update.message.chat.id, text=msgText)    
     
-def types_cmd(bot, update):
+def types_cmd(bot, update, pass_args=True):
     bot.sendMessage(chat_id=update.message.chat.id, text='types!!')
 
 def help_cmd(bot, update):
-    bot.sendMessage(chat_id=update.message.chat.id, text='Help:')
+    bot.sendMessage(chat_id=update.message.chat.id, text='Привет!'\
+                    'Доступные команды:'\
+                    '/recycle или /recycle <наименование> - введите ключевое слово, к примеру "пластиковая бутылка" и я помогу определить можно ее утилизировать или нет'\
+                    '/where или /where <район города> - подскажу, где пункт сбора в вашем районе'\
+                    '/types - подскажу какие отходы бывают'\
+                    '/metro или /metro <станция метро> - подскажу, где пункт сбора отностельно метро')
+
+def metro_cmd(bot, update, **args):
+    bot.sendMessage(chat_id=update.message.chat.id, text='Метро:')
 
 def button(bot, update):
     query = update.callback_query
@@ -140,13 +158,18 @@ def button(bot, update):
     elif city_place_code == 'spb_cnt':
         city_place = spb_cnt
     address= find_address(city_place)
-    bot.sendMessage(chat_id=update.message.chat.id, text=address)
+    if address == "":
+        address = "В данном районе нет пункта сбора. Просьба выборать ближайший район города к вашему"
+        bot.sendMessage(chat_id=query.message.chat.id, text=address, reply_markup=reply_markup,message_id=query.message.message_id)
+    else:
+        bot.sendMessage(chat_id=update.message.chat.id, text=address)
 
 start_handler = CommandHandler('start', start)
 recycle_handler = CommandHandler('recycle', recycle_cmd, pass_args=True)
 where_handler = CommandHandler('where', where_cmd, pass_args=True)
-types_handler = CommandHandler('types', types_cmd)
+types_handler = CommandHandler('types', types_cmd, pass_args=True)
 help_handler = CommandHandler('helpme', help_cmd)
+metro_handler = CommandHandler('helpme', metro_cmd, pass_args=True)
 
 dispatcher.add_handler(start_handler)
 dispatcher.add_handler(recycle_handler)
