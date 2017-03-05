@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from telegram.ext import Filters
+from telegram.ext import MessageHandler
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram import base
@@ -10,6 +12,7 @@ import csv
 
 
 #telegram_token = "342496596:AAGdzdiuSuNB7kcx4uDsqtNsEkghg0PXa58"
+# telegram_token = "363863639:AAHU8ZFGkMlS-1hKm1bz8M-6IXr2isj5FP0" #starforge
 telegram_token = config.TOKEN
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level= logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,7 +27,7 @@ spb_kln=u'калининский'
 spb_kir=u'кировский'
 spb_krg=u'красногвардейский'
 spb_krs=u'красносельский'
-spb_krd=u'кронштадский'
+spb_krd=u'кронштадтский'
 spb_msk=u'московский'
 spb_nev=u'невский'
 spb_prd=u'петроградский'
@@ -33,21 +36,21 @@ spb_prm=u'приморский'
 spb_frz=u'фрунзенский'
 spb_cnt=u'центральный'
 
-keyboard = [[InlineKeyboardButton(spb_adm, callback_data='spb_adm')], # адмиралтейский
+districts_button_list = [[InlineKeyboardButton(spb_adm, callback_data='spb_adm')], # адмиралтейский
             [InlineKeyboardButton(spb_vas, callback_data='spb_vas')], # василеостровский
             [InlineKeyboardButton(spb_vyb, callback_data='spb_vyb')], # выборгский
             [InlineKeyboardButton(spb_kln, callback_data='spb_kln')], # калининский
             [InlineKeyboardButton(spb_kir, callback_data='spb_kir')], # кировский
             [InlineKeyboardButton(spb_krg, callback_data='spb_krg')], # красногвардейский
             [InlineKeyboardButton(spb_krs, callback_data='spb_krs')], # красносельский
-            [InlineKeyboardButton(spb_krd, callback_data='spb_krd')], # кронштадский
+            [InlineKeyboardButton(spb_krd, callback_data='spb_krd')], # кронштадтский
             [InlineKeyboardButton(spb_msk, callback_data='spb_msk')], # московский
             [InlineKeyboardButton(spb_nev, callback_data='spb_nev')], # невский
             [InlineKeyboardButton(spb_prd, callback_data='spb_prd')], # петроградский
             [InlineKeyboardButton(spb_pdv, callback_data='spb_pdv')], # петродворцовый
             [InlineKeyboardButton(spb_prm, callback_data='spb_prm')], # приморский
             [InlineKeyboardButton(spb_frz, callback_data='spb_frz')], # фрунзенский
-            [InlineKeyboardButton(spb_cnt, callback_data='spb_cnt')]  # центральны                
+            [InlineKeyboardButton(spb_cnt, callback_data='spb_cnt')]  # центральный
             ]
 
 metro_button_list = [
@@ -120,6 +123,17 @@ metro_button_list = [
     InlineKeyboardButton("ст.м. Электросила",                      callback_data='spb_67')
 ]
 
+types_button_list = [
+            [InlineKeyboardButton('Пластиковый пакет',              callback_data='type_1')],
+            [InlineKeyboardButton('Пластиковое ведерко',            callback_data='type_2')],
+            [InlineKeyboardButton('CD/DVD диски',                   callback_data='type_3')],
+            [InlineKeyboardButton('Бумага',                         callback_data='type_4')],
+            [InlineKeyboardButton('Втулка',                         callback_data='type_5')],
+            [InlineKeyboardButton('Упаковка от яиц',                callback_data='type_6')],
+            [InlineKeyboardButton('Упаковка от масла, маргарина',   callback_data='type_7')],
+            [InlineKeyboardButton('Пластиковый контейнер',          callback_data='type_8')]
+            ]
+
 def build_menu(buttons: list,
                n_cols: int,
                header_buttons: list = None,
@@ -143,7 +157,7 @@ def find_address(district=None):
     result = ""
     if district!=None:
         #with open('D:\\Projects\\Py-Telegram-Bot\\districts.csv') as csvfile:
-        with codecs.open('D:\\Projects\\Py-Telegram-Bot\\districts.csv', encoding='utf-8') as csvfile:
+        with codecs.open('districts.csv', encoding='utf-8') as csvfile:
              reader = csv.reader(csvfile, delimiter=',', quotechar='"')
              for row in reader:
                  if result != "":
@@ -156,7 +170,7 @@ def find_address_by_metro(metro_name=None):
     result = ""
     if metro_name!=None:
         #with open('D:\\Projects\\Py-Telegram-Bot\\districts.csv') as csvfile:
-        with codecs.open('D:\\Projects\\Py-Telegram-Bot\\districts.csv', encoding='utf-8') as csvfile:
+        with codecs.open('districts.csv', encoding='utf-8') as csvfile:
              reader = csv.reader(csvfile, delimiter=',', quotechar='"')
              for row in reader:
                  if result != "":
@@ -165,13 +179,54 @@ def find_address_by_metro(metro_name=None):
                      result += row[1]
     return result
 
+
+'''
+Row numers:
+0-id
+1-class
+2-eng
+3-take
+4-tags
+5-url
+6-
+7-Комментарий
+'''
+def find_types(type=None):
+    result = ""
+    if type == None: # Если нет параметра, то выводится список типов (чтобы было, на будущее)
+        with codecs.open('recycle_db.csv', encoding='utf-8') as csvfile:
+             reader = csv.reader(csvfile, delimiter=',', quotechar='"')
+             for row in reader:
+                 if row[0].isdigit(): # Таким образом отсеиваются те записи, которые не участвуют в демонстрации
+                     if result != "":
+                         result += "\n"
+                     result += row[1]
+    else:
+        with codecs.open('recycle_db.csv', encoding='utf-8') as csvfile:
+             reader = csv.reader(csvfile, delimiter=',', quotechar='"')
+             for row in reader:
+                 if row[0].isdigit(): # Таким образом отсеиваются те записи, которые не участвуют в демонстрации
+                     if result != "":
+                         result += "\n"
+                     # print(">"+type.lower())
+                     # print(">>"+row[1].lower()[:len(type)])
+                     if type.lower() == row[1].lower().encode('utf-8') or type.lower() == row[1].lower()[:len(type)]:
+                         result += type
+                         if(row[3] == '1'):
+                            result += " - Утилизируется\n"
+                         else:
+                            result += " - НЕ утилизируется\n"
+                         result += row[6] + "\n"
+                         result += row[7] + "\n"
+    return result
+
 def start(bot, update):
     bot.sendMessage(chat_id=update.message.chat.id, text='Привет! Я помогу Вам правильно рассортировать Ваши отходы.'\
                     'Доступные команды:'\
                     '/start - начало работы со мой'\
                     '/helpme - помощь по командам и как мной пользоваться'\
                     '/recycle или /recycle <наименование> - введите ключевое слово, к примеру "пластиковая бутылка" и я помогу определить можно ее утилизировать или нет'\
-                    '/where или /where <район города> - подскажу, где пункт сбора в вашем районе'\
+                    '/where или /where <район города> - подскажу, где пункт сбора в вашем районе '\
                     '/types - подскажу какие отходы бывают'\
                     '/metro или /metro <станция метро> - подскажу, где пункт сбора отностельно метро')
 """
@@ -205,13 +260,17 @@ def where_cmd(bot, update, **args):
     else:
         buttonsListFlg=True
     if buttonsListFlg:
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        reply_markup = InlineKeyboardMarkup(districts_button_list)
         bot.sendMessage(chat_id=update.message.chat_id, reply_markup=reply_markup, text='Выберите пожалуйста район города:')
     else:
         bot.sendMessage(chat_id=update.message.chat.id, text=msgText)    
     
-def types_cmd(bot, update, pass_args=True):
-    bot.sendMessage(chat_id=update.message.chat.id, text='Допустимые классы отходов пригодные к переработке: \n')
+def types_cmd(bot, update, **args):
+    reply_markup = InlineKeyboardMarkup(types_button_list)
+    text = 'Перед вами список известных классов вторсырья.\n' \
+           'Вы можете выбрать любой из них для получения дополнительной информации:'
+    bot.sendMessage(chat_id=update.message.chat_id, reply_markup=reply_markup, text=text)
+    # bot.sendMessage(chat_id=update.message.chat.id, text=u'Допустимые классы отходов пригодные к переработке: \n' + find_types())
 
 def help_cmd(bot, update):
     bot.sendMessage(chat_id=update.message.chat.id, text='Привет!\n'\
@@ -228,13 +287,15 @@ def button(bot, update):
     query = update.callback_query
     city_place_code = query.data
     metro_place_code = query.data
+    types_code = query.data
     keyboard_back = [[InlineKeyboardButton(" «< ", callback_data='back')]]
     reply_markup = InlineKeyboardMarkup(keyboard_back)
     city_place = ""
     metro_name = ""
+    type = ""
     if city_place_code == 'back':
         text = 'Пожалуйста, выберите, район города:'
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        reply_markup = InlineKeyboardMarkup(districts_button_list)
         bot.sendMessage(chat_id=query.message.chat.id, text=text, reply_markup=reply_markup,message_id=query.message.message_id)
     elif city_place_code == 'spb_adm': city_place = spb_adm
     elif city_place_code == 'spb_vas': city_place = spb_vas
@@ -252,78 +313,89 @@ def button(bot, update):
     elif city_place_code == 'spb_frz': city_place = spb_frz
     elif city_place_code == 'spb_cnt': city_place = spb_cnt
     elif metro_place_code == 'spb_01': metro_name = 'ст.м. Автово'
-    elif metro_place_code == 'spb_02': metro_name = 'ст.м. Адмиралтейская'               
-    elif metro_place_code == 'spb_03': metro_name = 'ст.м. Академическая'                
-    elif metro_place_code == 'spb_04': metro_name = 'ст.м. Балтийская'                   
-    elif metro_place_code == 'spb_05': metro_name = 'ст.м. Бухарестская'                 
-    elif metro_place_code == 'spb_06': metro_name = 'ст.м. Василеостровская'             
-    elif metro_place_code == 'spb_07': metro_name = 'ст.м. Владимирская'                 
-    elif metro_place_code == 'spb_08': metro_name = 'ст.м. Волковская'                   
-    elif metro_place_code == 'spb_09': metro_name = 'ст.м. Выборгская'                   
-    elif metro_place_code == 'spb_10': metro_name = 'ст.м. Горьковская'                  
-    elif metro_place_code == 'spb_11': metro_name = 'ст.м. Гостиный двор'                
-    elif metro_place_code == 'spb_12': metro_name = 'ст.м. Гражданский проспект'         
-    elif metro_place_code == 'spb_13': metro_name = 'ст.м. Девяткино'                    
-    elif metro_place_code == 'spb_14': metro_name = 'ст.м. Достоевская'                  
-    elif metro_place_code == 'spb_15': metro_name = 'ст.м. Елизаровская'                 
-    elif metro_place_code == 'spb_16': metro_name = 'ст.м. Звёздная'                     
-    elif metro_place_code == 'spb_17': metro_name = 'ст.м. Звенигородская'               
-    elif metro_place_code == 'spb_18': metro_name = 'ст.м. Кировский завод'              
-    elif metro_place_code == 'spb_19': metro_name = 'ст.м. Комендантский проспект'       
-    elif metro_place_code == 'spb_20': metro_name = 'ст.м. Крестовский остров'           
-    elif metro_place_code == 'spb_21': metro_name = 'ст.м. Купчино'                      
-    elif metro_place_code == 'spb_22': metro_name = 'ст.м. Ладожская'                    
-    elif metro_place_code == 'spb_23': metro_name = 'ст.м. Ленинский проспект'           
-    elif metro_place_code == 'spb_24': metro_name = 'ст.м. Лесная'                       
-    elif metro_place_code == 'spb_25': metro_name = 'ст.м. Лиговский проспект'           
-    elif metro_place_code == 'spb_26': metro_name = 'ст.м. Ломоносовская'                
-    elif metro_place_code == 'spb_27': metro_name = 'ст.м. Маяковская'                   
-    elif metro_place_code == 'spb_28': metro_name = 'ст.м. Международная'                
-    elif metro_place_code == 'spb_29': metro_name = 'ст.м. Московская'                   
-    elif metro_place_code == 'spb_30': metro_name = 'ст.м. Московские ворота'            
-    elif metro_place_code == 'spb_31': metro_name = 'ст.м. Нарвская'                     
-    elif metro_place_code == 'spb_32': metro_name = 'ст.м. Невский проспект'             
-    elif metro_place_code == 'spb_33': metro_name = 'ст.м. Новочеркасская'               
-    elif metro_place_code == 'spb_34': metro_name = 'ст.м. Обводный канал'               
-    elif metro_place_code == 'spb_35': metro_name = 'ст.м. Обухово'                      
-    elif metro_place_code == 'spb_36': metro_name = 'ст.м. Озерки'                       
-    elif metro_place_code == 'spb_37': metro_name = 'ст.м. Парк Победы'                  
-    elif metro_place_code == 'spb_38': metro_name = 'ст.м. Парнас'                       
-    elif metro_place_code == 'spb_39': metro_name = 'ст.м. Петроградская'                
-    elif metro_place_code == 'spb_40': metro_name = 'ст.м. Пионерская'                   
+    elif metro_place_code == 'spb_02': metro_name = 'ст.м. Адмиралтейская'
+    elif metro_place_code == 'spb_03': metro_name = 'ст.м. Академическая'
+    elif metro_place_code == 'spb_04': metro_name = 'ст.м. Балтийская'
+    elif metro_place_code == 'spb_05': metro_name = 'ст.м. Бухарестская'
+    elif metro_place_code == 'spb_06': metro_name = 'ст.м. Василеостровская'
+    elif metro_place_code == 'spb_07': metro_name = 'ст.м. Владимирская'
+    elif metro_place_code == 'spb_08': metro_name = 'ст.м. Волковская'
+    elif metro_place_code == 'spb_09': metro_name = 'ст.м. Выборгская'
+    elif metro_place_code == 'spb_10': metro_name = 'ст.м. Горьковская'
+    elif metro_place_code == 'spb_11': metro_name = 'ст.м. Гостиный двор'
+    elif metro_place_code == 'spb_12': metro_name = 'ст.м. Гражданский проспект'
+    elif metro_place_code == 'spb_13': metro_name = 'ст.м. Девяткино'
+    elif metro_place_code == 'spb_14': metro_name = 'ст.м. Достоевская'
+    elif metro_place_code == 'spb_15': metro_name = 'ст.м. Елизаровская'
+    elif metro_place_code == 'spb_16': metro_name = 'ст.м. Звёздная'
+    elif metro_place_code == 'spb_17': metro_name = 'ст.м. Звенигородская'
+    elif metro_place_code == 'spb_18': metro_name = 'ст.м. Кировский завод'
+    elif metro_place_code == 'spb_19': metro_name = 'ст.м. Комендантский проспект'
+    elif metro_place_code == 'spb_20': metro_name = 'ст.м. Крестовский остров'
+    elif metro_place_code == 'spb_21': metro_name = 'ст.м. Купчино'
+    elif metro_place_code == 'spb_22': metro_name = 'ст.м. Ладожская'
+    elif metro_place_code == 'spb_23': metro_name = 'ст.м. Ленинский проспект'
+    elif metro_place_code == 'spb_24': metro_name = 'ст.м. Лесная'
+    elif metro_place_code == 'spb_25': metro_name = 'ст.м. Лиговский проспект'
+    elif metro_place_code == 'spb_26': metro_name = 'ст.м. Ломоносовская'
+    elif metro_place_code == 'spb_27': metro_name = 'ст.м. Маяковская'
+    elif metro_place_code == 'spb_28': metro_name = 'ст.м. Международная'
+    elif metro_place_code == 'spb_29': metro_name = 'ст.м. Московская'
+    elif metro_place_code == 'spb_30': metro_name = 'ст.м. Московские ворота'
+    elif metro_place_code == 'spb_31': metro_name = 'ст.м. Нарвская'
+    elif metro_place_code == 'spb_32': metro_name = 'ст.м. Невский проспект'
+    elif metro_place_code == 'spb_33': metro_name = 'ст.м. Новочеркасская'
+    elif metro_place_code == 'spb_34': metro_name = 'ст.м. Обводный канал'
+    elif metro_place_code == 'spb_35': metro_name = 'ст.м. Обухово'
+    elif metro_place_code == 'spb_36': metro_name = 'ст.м. Озерки'
+    elif metro_place_code == 'spb_37': metro_name = 'ст.м. Парк Победы'
+    elif metro_place_code == 'spb_38': metro_name = 'ст.м. Парнас'
+    elif metro_place_code == 'spb_39': metro_name = 'ст.м. Петроградская'
+    elif metro_place_code == 'spb_40': metro_name = 'ст.м. Пионерская'
     elif metro_place_code == 'spb_41': metro_name = 'ст.м. Площадь Александра Невского 1'
     elif metro_place_code == 'spb_42': metro_name = 'ст.м. Площадь Александра Невского 2'
-    elif metro_place_code == 'spb_43': metro_name = 'ст.м. Площадь Восстания'            
-    elif metro_place_code == 'spb_44': metro_name = 'ст.м. Площадь Ленина'               
-    elif metro_place_code == 'spb_45': metro_name = 'ст.м. Площадь Мужества'             
-    elif metro_place_code == 'spb_46': metro_name = 'ст.м. Политехническая'              
-    elif metro_place_code == 'spb_47': metro_name = 'ст.м. Приморская'                   
-    elif metro_place_code == 'spb_48': metro_name = 'ст.м. Пролетарская'                 
-    elif metro_place_code == 'spb_49': metro_name = 'ст.м. Проспект Большевиков'         
-    elif metro_place_code == 'spb_50': metro_name = 'ст.м. Проспект Ветеранов'           
-    elif metro_place_code == 'spb_51': metro_name = 'ст.м. Проспект Просвещения'         
-    elif metro_place_code == 'spb_52': metro_name = 'ст.м. Пушкинская'                   
-    elif metro_place_code == 'spb_53': metro_name = 'ст.м. Рыбацкое'                     
-    elif metro_place_code == 'spb_54': metro_name = 'ст.м. Садовая'                      
-    elif metro_place_code == 'spb_55': metro_name = 'ст.м. Сенная площадь'               
-    elif metro_place_code == 'spb_56': metro_name = 'ст.м. Спасская'                     
-    elif metro_place_code == 'spb_57': metro_name = 'ст.м. Спортивная'                   
-    elif metro_place_code == 'spb_58': metro_name = 'ст.м. Старая Деревня'               
-    elif metro_place_code == 'spb_59': metro_name = 'ст.м. Технологический институт 1'   
-    elif metro_place_code == 'spb_60': metro_name = 'ст.м. Технологический институт 2'   
-    elif metro_place_code == 'spb_61': metro_name = 'ст.м. Удельная'                     
-    elif metro_place_code == 'spb_62': metro_name = 'ст.м. Улица Дыбенко'                
-    elif metro_place_code == 'spb_63': metro_name = 'ст.м. Фрунзенская'                  
-    elif metro_place_code == 'spb_64': metro_name = 'ст.м. Чёрная речка'                 
-    elif metro_place_code == 'spb_65': metro_name = 'ст.м. Чернышевская'                 
-    elif metro_place_code == 'spb_66': metro_name = 'ст.м. Чкаловская'                   
+    elif metro_place_code == 'spb_43': metro_name = 'ст.м. Площадь Восстания'
+    elif metro_place_code == 'spb_44': metro_name = 'ст.м. Площадь Ленина'
+    elif metro_place_code == 'spb_45': metro_name = 'ст.м. Площадь Мужества'
+    elif metro_place_code == 'spb_46': metro_name = 'ст.м. Политехническая'
+    elif metro_place_code == 'spb_47': metro_name = 'ст.м. Приморская'
+    elif metro_place_code == 'spb_48': metro_name = 'ст.м. Пролетарская'
+    elif metro_place_code == 'spb_49': metro_name = 'ст.м. Проспект Большевиков'
+    elif metro_place_code == 'spb_50': metro_name = 'ст.м. Проспект Ветеранов'
+    elif metro_place_code == 'spb_51': metro_name = 'ст.м. Проспект Просвещения'
+    elif metro_place_code == 'spb_52': metro_name = 'ст.м. Пушкинская'
+    elif metro_place_code == 'spb_53': metro_name = 'ст.м. Рыбацкое'
+    elif metro_place_code == 'spb_54': metro_name = 'ст.м. Садовая'
+    elif metro_place_code == 'spb_55': metro_name = 'ст.м. Сенная площадь'
+    elif metro_place_code == 'spb_56': metro_name = 'ст.м. Спасская'
+    elif metro_place_code == 'spb_57': metro_name = 'ст.м. Спортивная'
+    elif metro_place_code == 'spb_58': metro_name = 'ст.м. Старая Деревня'
+    elif metro_place_code == 'spb_59': metro_name = 'ст.м. Технологический институт 1'
+    elif metro_place_code == 'spb_60': metro_name = 'ст.м. Технологический институт 2'
+    elif metro_place_code == 'spb_61': metro_name = 'ст.м. Удельная'
+    elif metro_place_code == 'spb_62': metro_name = 'ст.м. Улица Дыбенко'
+    elif metro_place_code == 'spb_63': metro_name = 'ст.м. Фрунзенская'
+    elif metro_place_code == 'spb_64': metro_name = 'ст.м. Чёрная речка'
+    elif metro_place_code == 'spb_65': metro_name = 'ст.м. Чернышевская'
+    elif metro_place_code == 'spb_66': metro_name = 'ст.м. Чкаловская'
     elif metro_place_code == 'spb_67': metro_name = 'ст.м. Электросила'
-    print (city_place)
-    print (metro_name)
+    elif types_code == 'type_1': type = 'Пластиковый пакет'
+    elif types_code == 'type_2': type = 'Пластиковое ведерко'
+    elif types_code == 'type_3': type = 'CD/DVD диски'
+    elif types_code == 'type_4': type = 'Бумага'
+    elif types_code == 'type_5': type = 'Втулка'
+    elif types_code == 'type_6': type = 'Упаковка от яиц'
+    elif types_code == 'type_7': type = 'Упаковка от масла, маргарина'
+    elif types_code == 'type_8': type = 'Пластиковый контейнер'
+    # print (city_place)
+    # print (metro_name)
+    # print(type)
     if city_place != "":
         address= find_address(city_place)
     elif metro_name != "":
-        address= find_address_by_metro(metro_name.replace('ст.м. ','')) 
+        address= find_address_by_metro(metro_name.replace('ст.м. ',''))
+    elif type != "":
+        address = find_types(type)
     if address == "":
         address = "В данном районе|станции метро нет пункта сбора. Просьба выборать ближайший район/станцию метро города к вашему"
     bot.sendMessage(chat_id=query.message.chat.id, text=address)
@@ -334,6 +406,15 @@ where_handler = CommandHandler('where', where_cmd, pass_args=True)
 types_handler = CommandHandler('types', types_cmd, pass_args=True)
 help_handler = CommandHandler('help', help_cmd)
 metro_handler = CommandHandler('metro', metro_cmd, pass_args=True)
+
+# def foto_cmd(bot, update, **args):
+#     updates = bot.getUpdates()
+#     query = update.callback_query
+#     bot.sendMessage(chat_id=query.message.chat_id, file=[u.message.photo for u in updates if u.message.photo])
+#
+# photo_handler = MessageHandler(Filters.photo, foto_cmd)
+#
+# dispatcher.add_handler(photo_handler)
 
 dispatcher.add_handler(start_handler)
 dispatcher.add_handler(recycle_handler)
