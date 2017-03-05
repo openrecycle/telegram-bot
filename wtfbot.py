@@ -21,7 +21,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 def handle(bot, update):
     # import ipdb; ipdb.set_trace()
-    f = bot.getFile(update.message.photo[0].file_id)
+    f = bot.getFile(update.message.photo[-1].file_id)
     fn = "files/{}.jpg".format(time.time())
     f.download(fn)
     guess = run_inference_on_image(fn) 
@@ -36,5 +36,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # print(run_inference_on_image("/home/suh/Downloads/stakan.jpg"))
     main()
