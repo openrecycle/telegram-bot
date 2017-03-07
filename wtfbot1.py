@@ -1,44 +1,90 @@
 import logging
 
-from telegram.ext import Updater, CommandHandler, MessageHandler
-from telegram.ext.filters import Filters
-from sasha2vec import mapping
-import time
+from telegram.ext import Filters, MessageHandler, Updater, CommandHandler, CallbackQueryHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+import logging
+import codecs
+import csv
 
+from config import TOKEN
+from interface import metro_button_list
+from handlers import recycle_cmd, where_cmd, types_cmd, help_cmd, metro_cmd, start, button, image_rec
 
 class Flags:
     model_dir = "."
-
 FLAGS = Flags()
-from classify import run_inference_on_image
-from config import TOKEN
+
+
+
+
+
 
 updater = Updater(TOKEN)
 dispatcher = updater.dispatcher
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level= logging.INFO)
+logger = logging.getLogger(__name__)
 
-def get_describe_object_by_id(classid==None):
-        if classid == None:
-            return "Please, make more photo and "
-    pass
 
-def handle(bot, update):
-    # import ipdb; ipdb.set_trace()
-    f = bot.getFile(update.message.photo[-1].file_id)
-    fn = "files/{}.jpg".format(time.time())
-    f.download(fn)
-    guess = run_inference_on_image(fn)
-    guessed_class = mapping(guess)
-    bot.sendMessage(chat_id=update.message.chat_id, text="I think it is a {}".format(guess))
+"""
+/recycle
+/where
+/types
+/metro
+"""
 
-handler = MessageHandler(Filters.photo, handle)
-dispatcher.add_handler(handler)
+start_handler = CommandHandler('start', start)
+recycle_handler = CommandHandler('recycle', recycle_cmd, pass_args=True)
+where_handler = CommandHandler('where', where_cmd, pass_args=True)
+# types_handler = CommandHandler('types', types_cmd, pass_args=True)
+help_handler = CommandHandler('help', help_cmd)
+metro_handler = CommandHandler('metro', metro_cmd, pass_args=True)
+image_handler = MessageHandler(Filters.photo, image_rec)
+
+
+dispatcher.add_handler(start_handler)
+dispatcher.add_handler(recycle_handler)
+dispatcher.add_handler(where_handler)
+# dispatcher.add_handler(types_handler)
+dispatcher.add_handler(help_handler)
+dispatcher.add_handler(metro_handler)
+dispatcher.add_handler(CallbackQueryHandler(button))
+dispatcher.add_handler(image_handler)
+
+
+#telegram_token = "342496596:AAGdzdiuSuNB7kcx4uDsqtNsEkghg0PXa58"
+
+
+
+
+
+
+# metro_reply_markup = InlineKeyboardMarkup(build_menu(metro_button_list, n_cols=3))
+
+
+
 
 def main():
     updater.start_polling()
-    # updater.idle()
+    updater.idle()
 
 
 if __name__ == "__main__":
     main()
+
+'''
+Row numers:
+0-id
+1-class
+2-eng
+3-take
+4-tags
+5-url
+6-
+7-Комментарий
+'''
+
+
+
+
+
