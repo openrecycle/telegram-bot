@@ -1,5 +1,9 @@
 import time
-from classify import run_inference_on_image
+import os
+try:
+    from classify import run_inference_on_image
+except:
+    None
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from interface import districts_button_list, types_button_list, metro_button_list
 from sasha2vec import mapping
@@ -84,7 +88,10 @@ def find_types(type=None):
                         return result
 
 def recycle_cmd(bot, update, **args):
-    recycle_args = args.get("args")[0]
+    try:
+        recycle_args = args.get("args")[0]
+    except:
+        recycle_args = []
     if len(recycle_args) == 0:
         bot.sendMessage(chat_id=update.message.chat.id, text='Допустимые классы отходов пригодные к переработке: \n')
     else:
@@ -373,14 +380,22 @@ def start(bot, update):
 def image_rec(bot, update):
     # import ipdb; ipdb.set_trace()
     f = bot.getFile(update.message.photo[-1].file_id)
+    if not os.path.exists('files'):
+        os.makedirs('files')
     fn = "files/{}.jpg".format(time.time())
     f.download(fn)
-    resp = run_inference_on_image(fn)
-    obj_info = search_info_by_id(mapping(resp))
+    try:
+        resp = run_inference_on_image(fn)
+        obj_info = search_info_by_id(mapping(resp))
+    except:
+        resp = None
+        obj_info = mapping('009')
+        None
     print(obj_info)
     if obj_info[2]=='1':
         obj_inf = "принимаем"
     else:
         obj_inf = "не принимаем"
     bot.sendMessage(chat_id=update.message.chat_id, text='Это {} и это мы {}'.format(obj_info[0],obj_inf))
-    bot.sendMessage(chat_id=update.message.chat_id, text=resp)
+    if resp != None:
+        bot.sendMessage(chat_id=update.message.chat_id, text=resp)
