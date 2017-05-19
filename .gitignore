@@ -1,4 +1,16 @@
-create_db.py
+db_ops/create_db.py
 clean_db.py
 venv
 __pycache__
+files/
+test.jpg
+test.py
+functions.py
+waste_db
+waste_db.sqlite
+db_ops
+pics
+convert.py
+archive
+config.py
+

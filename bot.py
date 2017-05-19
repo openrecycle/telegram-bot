@@ -1,19 +1,23 @@
-from telegram.ext import Updater, CommandHandler,MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import os
 import logging
-import config
-from text import start_answer, location_answer, text_answer, audio_answer, photo_answer
 import sqlite3
+import time
+import requests
+import json
+from functions import text_search, make_text, make_variants_text, find_points,\
+    get_user_location, get_google_points
+from config import FILEDIR, DATABASE, TELEGRAM_TOKEN, API
+from text import start_answer, location_answer, audio_answer, paper, plastik, tetrapak
 
-telegram_token = config.telegram_token
-db = config.database
+telegram_token = TELEGRAM_TOKEN
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level= logging.INFO)
 
 PORT = int(os.environ.get('PORT', '5000'))
 updater = Updater(telegram_token)
 dispatcher = updater.dispatcher
 
-connect = sqlite3.connect(db, check_same_thread=False)
+connect = sqlite3.connect(DATABASE, check_same_thread=False)
 cursor = connect.cursor()
 
 def start(bot, update):
@@ -28,7 +32,7 @@ def save_location(bot, update):
     longitude = update.message.location.longitude
 
     cursor.execute("SELECT EXISTS(SELECT 1 FROM users WHERE telegram_id=?)",(telegram_id,))
-    if cursor.fetchone()[0] == 0
+    if cursor.fetchone()[0] == 0:
         insert_query = '''INSERT INTO users (telegram_id,username,first_name,last_name,latitude,longitude)
         values(?,?,?,?,?,?)'''
         cursor.execute(insert_query,(telegram_id, username, first_name, last_name, latitude,longitude))
@@ -39,20 +43,51 @@ def save_location(bot, update):
         connect.commit()
     bot.sendMessage(text=location_answer, chat_id=update.message.chat.id)
 
-def check_query(id):
-    query = '''SELECT * FROM users WHERE telegram_id - ?'''
-    cursor.execute(query, (id,))
-    if cursor.fetchone() == None:
-        return True
-
 def process_text(bot,update):
-    bot.sendMessage(text=text_answer, chat_id=update.message.chat.id)
+    waste_item = update.message.text.lower()
+    result = text_search(waste_item)
+    print(result)
+
+    if type(result) == tuple:
+        waste_item = make_text(result)
+        photopath = 'pics/' + result[2]
+        bot.sendMessage(text=waste_item, chat_id=update.message.chat.id, parse_mode='HTML')
+        try:
+            bot.sendPhoto(chat_id=update.message.chat.id, photo=open(photopath, 'rb'))
+        except FileNotFoundError:
+            pass
+        geo = get_user_location(update.message.from_user.id)
+        points = find_points(geo, result[0])
+        get_google_points(points, geo)
+    elif type(result) == list and len(result) > 0:
+        waste_item = make_variants_text(result)
+        geo = get_user_location(update.message.from_user.id)
+        # approximate points calculated simply
+        points = find_points(geo, result[0])
+        # certain point calculated with google api
+        true_points = get_google_points(points, geo)
+        
+        bot.sendMessage(text=waste_item, chat_id=update.message.chat.id, parse_mode='HTML')
+    else:
+        bot.sendMessage(text=result, chat_id=update.message.chat.id, parse_mode='HTML')
+
 
 def process_audio(bot,update):
+
     bot.sendMessage(text=audio_answer, chat_id=update.message.chat.id)
 
 def process_photo(bot, update):
-    bot.sendMessage(text=photo_answer, chat_id=update.message.chat.id)
+    if not os.path.exists('files'):
+        os.mkdir(FILEDIR)
+    f = bot.getFile(update.message.photo[-1].file_id)
+    fn = FILEDIR + '/' + "{}-{}.jpg".format( time.time(), 'test')
+    f.download(fn)
+    file = {'file': open(fn, 'rb')}
+    r = requests.put(API, files=file)
+    text = json.loads(r.text)
+    text = text['Message']
+
+    bot.sendMessage(text=text, chat_id=update.message.chat.id)
 
 start_handler = CommandHandler('start', start)
 location_handler = MessageHandler(Filters.location, save_location)
