@@ -4,6 +4,7 @@ venv
 __pycache__
 files/
 test.jpg
+test2.jpg
 test.py
 functions.py
 waste_db
@@ -12,5 +13,12 @@ db_ops
 pics
 convert.py
 archive
-config.py
-
+special/config.py
+audio.wav
+bot2.py
+logs.csv
+openrecycle.db
+.idea/workspace.xml
+files4learning
+new_pics
+special

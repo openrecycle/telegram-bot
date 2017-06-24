@@ -1,5 +1,0 @@
-TELEGRAM_TOKEN = '378227324:AAG6d6hcrdHkhvqVyzuhSbLHPDJJoNzxW7w'
-DATABASE = 'openrecycle.db'
-FILEDIR = 'files'
-API = 'http://217.71.231.9:48777/api/UploadFile4Recognition'
-GOOGLE_API_TOKEN = 'AIzaSyDItNGSxOajepnCll-G9r90-sLUZmkIOkg'
